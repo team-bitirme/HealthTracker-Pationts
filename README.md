@@ -1,179 +1,202 @@
-# Diyabet Takip Uygulaması
+# HealthTracker - Hasta Uygulaması
 
-React Native Expo uygulaması ile Supabase authentication sistemi.
-
-## Kurulum
-
-### 1. Gerekli Paketler
-
-Aşağıdaki paketler zaten yüklenmiştir:
-
-```bash
-npx expo install @supabase/supabase-js@2.49.6 @react-native-async-storage/async-storage react-native-url-polyfill zustand
-```
-
-### 2. Environment Variables
-
-Proje kök dizininde `.env` dosyası oluşturun:
-
-```env
-# Supabase Configuration
-EXPO_PUBLIC_SUPABASE_URL=your-supabase-project-url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-
-# Development User (for testing)
-EXPO_PUBLIC_DEV_USER_EMAIL=test@example.com
-EXPO_PUBLIC_DEV_USER_PASSWORD=123456
-```
-
-### 3. Supabase Kurulumu
-
-1. [Supabase](https://supabase.com) hesabı oluşturun
-2. Yeni proje oluşturun
-3. Project Settings > API'den URL ve anon key'i alın
-4. `.env` dosyasına ekleyin
+Diyabet hastaları için geliştirilmiş sağlık takip uygulaması.
 
 ## Özellikler
 
-### ✅ Tamamlanan Özellikler
+### 📊 Sağlık Verileri Takibi
+- Kan şekeri ölçümleri
+- Tansiyon takibi
+- Nabız monitörü
+- Vücut sıcaklığı ölçümü
+- SpO2 (oksijen satürasyonu) takibi
 
-- **Authentication Service** (`services/auth.ts`)
-  - Email/şifre ile giriş
-  - Çıkış yapma
-  - Şifre sıfırlama (OTP ile)
-  - Şifre güncelleme
-  - Session yönetimi
-  - Hata yönetimi (Türkçe mesajlar)
+### 📱 Veri Girişi
+- Manuel veri girişi
+- Fotoğraf ile veri girişi (OCR)
+- El ile veri girişi
 
-- **State Management** (`store/authStore.ts`)
-  - Zustand ile global state
-  - Authentication durumu
-  - Loading states
-  - Session persistence
+### 💬 Mesajlaşma Sistemi
+- Doktor ile güvenli mesajlaşma
+- AI asistan desteği
+- Sistem bildirimleri
+- Farklı mesaj tipleri (doktor, AI, sistem)
+- Mesaj durumu takibi (gönderiliyor, gönderildi, teslim edildi, okundu)
+- Gerçek zamanlı mesajlaşma arayüzü
 
-- **UI Screens**
-  - Login sayfası (`app/(auth)/login.tsx`)
-  - Şifre sıfırlama (`app/(auth)/forgot-password.tsx`)
-  - Şifre güncelleme (`app/(auth)/update-password.tsx`)
+### 🔔 Push Notification Sistemi
+- Firebase Cloud Messaging (FCM) entegrasyonu
+- Kullanıcı oturum açtığında otomatik token kaydı
+- Kullanıcı çıkış yaptığında token pasifleştirme
+- Token yenilenme otomatik takibi
+- Platform bazlı (iOS/Android) token yönetimi
+- Cihaz bilgisi ile token eşleştirme
+- Upsert mantığı ile tekrar eden token kayıtlarını önleme
 
-- **Navigation**
-  - Auth guard (giriş yapmış kullanıcılar ana sayfaya yönlendirilir)
-  - Otomatik yönlendirme
-  - Protected routes
+### 📈 Veri Görselleştirme
+- Ölçüm geçmişi
+- Grafik görünümler
+- Detaylı analiz raporları
 
-- **Development Features**
-  - Geliştirme ortamında otomatik kullanıcı bilgileri
-  - Console logging
-  - Debug bilgileri
+## Teknik Detaylar
 
-### 🔧 Teknik Detaylar
+### Kullanılan Teknolojiler
+- **React Native** - Mobil uygulama geliştirme
+- **Expo** - Geliştirme ve dağıtım platformu
+- **TypeScript** - Tip güvenli JavaScript
+- **Zustand** - State management
+- **React Navigation** - Navigasyon yönetimi
+- **Firebase Cloud Messaging** - Push notification servisi
+- **Supabase** - Backend ve veritabanı
 
-#### Dosya Yapısı
-
+### Proje Yapısı
 ```
-lib/
-  supabase.ts          # Supabase client konfigürasyonu
-services/
-  auth.ts              # Authentication servisleri
-store/
-  authStore.ts         # Global state management
 app/
-  (auth)/
-    login.tsx          # Giriş sayfası
-    forgot-password.tsx # Şifre sıfırlama
-    update-password.tsx # Şifre güncelleme
-    _layout.tsx        # Auth layout
-  _layout.tsx          # Ana layout (auth guard)
-  index.tsx            # Ana sayfa (yönlendirme)
+├── (auth)/          # Kimlik doğrulama ekranları
+├── (tabs)/          # Ana tab navigasyon ekranları
+├── mesajlar.tsx     # Tam ekran mesajlaşma ekranı
+└── ...
+
+components/
+├── MessagesPreview.tsx  # Ana ekran mesaj önizlemesi
+├── ChatHeader.tsx       # Mesajlaşma ekranı header'ı
+├── MessageBubble.tsx    # Mesaj balonu komponenti
+├── MessageInput.tsx     # Mesaj yazma alanı
+└── ...
+
+lib/
+├── hooks/
+│   └── useFCMToken.ts   # FCM token yönetimi hook'u
+├── types/
+│   ├── database.ts      # Veritabanı tipleri
+│   └── supabase.ts      # Supabase tipleri
+└── firebase.ts          # Firebase konfigürasyonu
+
+store/
+├── messagesStore.ts     # Mesajlar state management
+├── authStore.ts         # Kimlik doğrulama store (FCM entegreli)
+└── ...
+
+services/
+├── messagesService.ts   # Mesajlaşma API servisleri
+├── fcmTokenService.ts   # FCM token yönetimi servisi
+├── patientService.ts    # Hasta verileri servisleri
+└── ...
 ```
 
-#### Authentication Flow
+### FCM Token Yönetimi
 
-1. **Uygulama Başlangıcı**
-   - Auth store initialize edilir
-   - Mevcut session kontrol edilir
-   - Kullanıcı durumuna göre yönlendirme
+#### Veritabanı Yapısı
+```sql
+fcm_tokens tablosu:
+- id: UUID (Primary Key)
+- user_id: UUID (Foreign Key -> users.id)
+- token: TEXT (FCM Token)
+- platform: TEXT (ios/android)
+- device_info: TEXT (JSON format cihaz bilgileri)
+- is_active: BOOLEAN (Token aktif mi?)
+- created_at: TIMESTAMP
+- updated_at: TIMESTAMP
+```
 
-2. **Giriş Yapma**
-   - Email/şifre validasyonu
-   - Supabase auth API çağrısı
-   - Session storage
-   - Ana sayfaya yönlendirme
+#### Özellikler
+- **Otomatik Token Yönetimi**: Kullanıcı giriş/çıkış durumlarında otomatik token işlemleri
+- **Upsert Mantığı**: Aynı token tekrar kaydedilmez, mevcut token güncellenir
+- **Platform Desteği**: iOS ve Android için ayrı token yönetimi
+- **Cihaz Bilgisi**: Token ile birlikte cihaz bilgileri de kaydedilir
+- **Token Yenileme**: Firebase token yenilendiğinde otomatik güncelleme
+- **Pasifleştirme**: Kullanıcı çıkış yaptığında eski token'lar pasifleştirilir
 
-3. **Şifre Sıfırlama**
-   - Email validasyonu
-   - OTP gönderimi
-   - Deep link ile şifre güncelleme
-
-4. **Çıkış Yapma**
-   - Session temizleme
-   - Login sayfasına yönlendirme
-
-### 🚀 Kullanım
-
-#### Development Mode
-
-Geliştirme ortamında uygulama otomatik olarak test kullanıcısı bilgilerini doldurur:
-
+#### Kullanım
 ```typescript
-// lib/supabase.ts
-export const DEV_USER = {
-  email: process.env.EXPO_PUBLIC_DEV_USER_EMAIL || 'test@example.com',
-  password: process.env.EXPO_PUBLIC_DEV_USER_PASSWORD || '123456',
-};
+// Hook kullanımı
+const { token, isLoading, error, getToken, saveToken } = useFCMToken();
+
+// Manuel token alma
+const fcmToken = await getToken();
+
+// Token kaydetme
+await saveToken(fcmToken);
 ```
 
-#### Production
+### Mesajlaşma Sistemi Özellikleri
 
-Production'da `.env` dosyasındaki gerçek Supabase bilgilerini kullanın.
+#### Mesaj Tipleri
+- **Doctor**: Doktordan gelen mesajlar (yeşil tema)
+- **AI**: AI asistanından gelen mesajlar (mor tema)
+- **System**: Sistem bildirimleri (gri tema)
+- **User**: Kullanıcının gönderdiği mesajlar (mavi tema)
 
-### 📱 Ekranlar
+#### Mesaj Durumları
+- **Sending**: Mesaj gönderiliyor
+- **Sent**: Mesaj gönderildi
+- **Delivered**: Mesaj teslim edildi
+- **Read**: Mesaj okundu
 
-1. **Login Screen**
-   - Email/şifre girişi
-   - "Şifremi unuttum" linki
-   - Geliştirme modunda otomatik doldurma
+#### Özellikler
+- Responsive tasarım
+- Keyboard-aware input
+- Auto-scroll to latest message
+- Message status indicators
+- Unread message badges
+- Empty state handling
 
-2. **Forgot Password Screen**
-   - Email girişi
-   - OTP gönderimi
-   - Başarı mesajı
+## Kurulum
 
-3. **Update Password Screen**
-   - Yeni şifre girişi
-   - Şifre onayı
-   - Şifre gereksinimleri gösterimi
-
-### 🔐 Güvenlik
-
-- Şifreler minimum 6 karakter
-- Email validasyonu
-- Session persistence
-- Automatic token refresh
-- Error handling
-- Input sanitization
-
-### 🌐 Çoklu Dil Desteği
-
-Şu anda Türkçe desteklenmektedir. Hata mesajları ve UI metinleri Türkçe'dir.
-
-### 📝 Notlar
-
-- Kayıt olma özelliği bulunmamaktadır (istek gereği)
-- OTP sistemi email üzerinden çalışır
-- Deep linking `diabetesisp://` scheme'i kullanır
-- AsyncStorage ile session persistence
-- Zustand ile state management
-
-## Geliştirme
-
+1. Projeyi klonlayın
 ```bash
-# Uygulamayı başlat
-npm start
+git clone [repository-url]
+cd HealthTracker-Pationts
+```
 
-# Android
-npm run android
+2. Bağımlılıkları yükleyin
+```bash
+npm install
+```
 
-# iOS
-npm run ios
-``` 
+3. Firebase konfigürasyonu
+```bash
+# Firebase paketlerini yükleyin
+npm install @react-native-firebase/app @react-native-firebase/messaging
+
+# Firebase konfigürasyon dosyalarını ekleyin
+# - Android: google-services.json (proje kök dizinine)
+# - iOS: GoogleService-Info.plist (proje kök dizinine)
+```
+
+4. Uygulamayı başlatın
+```bash
+npx expo start
+```
+
+## Geliştirme Notları
+
+### FCM Token Sistemi
+- Fiziksel cihazda test edilmelidir (emülatörde çalışmaz)
+- Firebase Console'dan test mesajları gönderilebilir
+- Token'lar veritabanında güvenli şekilde saklanır
+- Kullanıcı oturum durumları ile senkronize çalışır
+
+### Mesajlaşma Sistemi
+- Şu anda mock verilerle çalışmaktadır
+- Gerçek API entegrasyonu için `messagesService.ts` dosyasındaki yorum satırları açılmalıdır
+- WebSocket entegrasyonu gerçek zamanlı mesajlaşma için eklenebilir
+- Push notification desteği FCM ile entegre edilmiştir
+
+### Güvenlik
+- Mesajlar end-to-end şifreleme ile korunmalıdır
+- API çağrıları için authentication token'ları kullanılmalıdır
+- Hassas veriler için ek güvenlik katmanları eklenmelidir
+- FCM token'ları güvenli şekilde saklanır ve yönetilir
+
+## Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'Add some amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
+5. Pull Request oluşturun
+
+## Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. 

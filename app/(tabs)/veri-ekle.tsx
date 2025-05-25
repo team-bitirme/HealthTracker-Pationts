@@ -31,7 +31,8 @@ export default function VeriEkle() {
       pathname: '/veri-ekleme-yontemi',
       params: { 
         categoryId: category.id,
-        categoryTitle: category.title 
+        categoryTitle: category.title,
+        measurementTypeId: category.measurementTypeId?.toString() || ''
       }
     });
   };

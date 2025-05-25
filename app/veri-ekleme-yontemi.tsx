@@ -7,22 +7,23 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function VeriEklemeYontemi() {
   const router = useRouter();
-  const { categoryId, categoryTitle } = useLocalSearchParams<{
+  const { categoryId, categoryTitle, measurementTypeId } = useLocalSearchParams<{
     categoryId: string;
     categoryTitle: string;
+    measurementTypeId?: string;
   }>();
 
   const handleManualEntry = () => {
     router.push({
       pathname: '/el-ile-giris' as any,
-      params: { categoryId, categoryTitle }
+      params: { categoryId, categoryTitle, measurementTypeId }
     });
   };
 
   const handlePhotoEntry = () => {
     router.push({
       pathname: '/fotograf-ile-giris' as any,
-      params: { categoryId, categoryTitle }
+      params: { categoryId, categoryTitle, measurementTypeId }
     });
   };
 

@@ -7,10 +7,11 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ScreenContent } from '~/components/ScreenContent';
 import { CustomHeader } from '~/components/CustomHeader';
 import { MetricsGrid } from '~/components/MetricsGrid';
-import { MessageBox } from '~/components/MessageBox';
+import { MessagesPreview, Message } from '~/components/MessagesPreview';
 import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { patientService } from '~/services/patientService';
+import { useFCMToken } from '~/lib/hooks/useFCMToken';
 
 interface MetricData {
   id: string;
@@ -28,6 +29,9 @@ export default function AnaSayfa() {
   const { profile, fetchProfile } = useProfileStore();
   const [metrics, setMetrics] = useState<MetricData[]>([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  
+  // FCM Token yönetimi
+  const { token: fcmToken, isLoading: fcmLoading, error: fcmError } = useFCMToken();
 
   useEffect(() => {
     if (user?.id) {
@@ -42,6 +46,20 @@ export default function AnaSayfa() {
       loadMetrics();
     }
   }, [profile?.patient_id]);
+
+  // FCM Token durumunu logla (sadece değişiklik olduğunda)
+  useEffect(() => {
+    if (fcmToken && user?.id) {
+      console.log('🔔 FCM Token hazır:', {
+        tokenLength: fcmToken.length,
+        userId: user.id
+      });
+    }
+    
+    if (fcmError) {
+      console.log('❌ FCM Token hatası:', fcmError);
+    }
+  }, [fcmToken, fcmError]);
 
   const loadMetrics = async () => {
     if (!profile?.patient_id) {
@@ -102,32 +120,8 @@ export default function AnaSayfa() {
     }
   };
 
-  const messages = [
-    {
-      id: '1',
-      sender: 'Dr. Mehmet Yılmaz',
-      date: '18 Ekim 2023, 14:30',
-      isUnread: true,
-      content:
-        'Merhaba Emre, son kan şekeri ölçümlerinizi inceledim. Değerleriniz normal aralıkta görünüyor ancak biraz daha düzenli ölçüm yapmanızı öneriyorum. Bir sonraki kontrolünüzde bu konuyu detaylı konuşalım.',
-    },
-    {
-      id: '2',
-      sender: 'DiabetesAI Asistan',
-      date: '19 Ekim 2023, 08:15',
-      isUnread: false,
-      content:
-        'Günaydın! Son 7 günlük kan şekeri ortalamanız 128 mg/dL. Geçen haftaya göre %5 düşüş gösterdiniz. Egzersiz alışkanlığınızı sürdürmenizi öneririm.',
-    },
-    {
-      id: '3',
-      sender: 'DiabetesAI Asistan',
-      date: '19 Ekim 2023, 08:15',
-      isUnread: false,
-      content:
-        'Günaydın! Son 7 günlük kan şekeri ortalamanız 128 mg/dL. Geçen haftaya göre %5 düşüş gösterdiniz. Egzersiz alışkanlığınızı sürdürmenizi öneririm.',
-    },
-  ];
+  // Mesajlar - şimdilik boş array, daha sonra gerçek verilerle doldurulacak
+  const messages: Message[] = [];
 
   const handleMetricPress = (metricId: string) => {
     const metric = metrics.find((m) => m.id === metricId);
@@ -150,9 +144,9 @@ export default function AnaSayfa() {
     }
   };
 
-  const handleMessagePress = (messageId: string) => {
-    console.log('💬 Mesaj seçildi:', messageId);
-    // Navigation to message detail page will be added here later
+  const handleMessagesPress = () => {
+    console.log('💬 Mesajlar ekranına yönlendiriliyor');
+    router.push('/mesajlar' as any);
   };
 
   return (
@@ -171,17 +165,10 @@ export default function AnaSayfa() {
         </View>
 
         <View style={styles.messagesSection}>
-          <Text style={styles.sectionTitle}>Mesajlar</Text>
-          {messages.map((message) => (
-            <MessageBox
-              key={message.id}
-              sender={message.sender}
-              date={message.date}
-              isUnread={message.isUnread}
-              content={message.content}
-              onPress={() => handleMessagePress(message.id)}
-            />
-          ))}
+          <MessagesPreview
+            messages={messages}
+            onPress={handleMessagesPress}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

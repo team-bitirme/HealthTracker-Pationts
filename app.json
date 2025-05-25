@@ -11,7 +11,9 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -29,15 +31,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.diabetesisp",
-      "edgeToEdgeEnabled": true
+      "package": "com.teambitirme.diabetesisp",
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     }
   }
 }

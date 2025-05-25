@@ -62,15 +62,7 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="mesajlar"
-          options={{
-            title: 'Mesajlar',
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="comments" color={color} focused={focused} />
-            ),
-          }}
-        />
+
       </Tabs>
     </View>
   );

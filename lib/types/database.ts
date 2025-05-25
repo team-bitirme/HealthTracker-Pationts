@@ -34,6 +34,17 @@ export interface Doctor {
   specialization_name?: string | null;
 }
 
+export interface FCMToken {
+  id: string;
+  user_id: string | null;
+  token: string;
+  platform: string | null;
+  device_info: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export interface PatientProfile {
   // User info
   id: string;

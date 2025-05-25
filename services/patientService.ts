@@ -537,6 +537,59 @@ export class PatientService {
       return null;
     }
   }
+
+  /**
+   * Save a new health measurement
+   */
+  async saveMeasurement(
+    patientId: string, 
+    measurementTypeId: number, 
+    value: number, 
+    method: string = 'manual',
+    measuredAt?: Date
+  ) {
+    console.log(`💾 PatientService: Saving measurement for patient ${patientId}, type ${measurementTypeId}, value ${value}`);
+    
+    try {
+      const measurementData = {
+        patient_id: patientId,
+        measurement_type_id: measurementTypeId,
+        value: value,
+        method: method,
+        measured_at: measuredAt ? measuredAt.toISOString() : new Date().toISOString(),
+        is_deleted: false
+      };
+
+      const { data, error } = await supabase
+        .from('health_measurements')
+        .insert(measurementData)
+        .select(`
+          id,
+          value,
+          measured_at,
+          method,
+          created_at,
+          measurement_types!inner (
+            id,
+            code,
+            name,
+            unit
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ PatientService: Error saving measurement:', error);
+        throw new Error(`Ölçüm kaydedilemedi: ${error.message}`);
+      }
+
+      console.log('✅ PatientService: Measurement saved successfully:', data.id);
+      return data;
+    } catch (error) {
+      console.error('❌ PatientService: Error in saveMeasurement:', error);
+      throw error;
+    }
+  }
 }
 
 export const patientService = new PatientService(); 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { authService } from '../services/auth';
+import { fcmTokenService } from '../services/fcmTokenService';
 
 interface AuthState {
   // State
@@ -16,6 +17,7 @@ interface AuthState {
   updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   initialize: () => Promise<void>;
   setSession: (session: Session | null) => void;
+  saveFCMToken: (token: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -38,6 +40,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: result.user,
           isLoading: false,
         });
+        
+        console.log('✅ Kullanıcı başarıyla giriş yaptı:', result.user.email);
         return { success: true };
       } else {
         set({ isLoading: false });
@@ -54,14 +58,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     
     try {
+      const { user } = get();
+      
+      // Kullanıcı çıkış yaparken FCM token'larını pasif yap
+      if (user?.id) {
+        console.log('🚪 Kullanıcı çıkışı yapıyor, FCM token\'ları pasifleştiriliyor...');
+        await fcmTokenService.handleUserLogout(user.id);
+      }
+      
       await authService.signOut();
       set({
         session: null,
         user: null,
         isLoading: false,
       });
+      
+      console.log('✅ Kullanıcı başarıyla çıkış yaptı');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('❌ Çıkış hatası:', error);
       set({ isLoading: false });
     }
   },
@@ -94,6 +108,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  // Save FCM Token (tekrar eden çağrıları önle)
+  saveFCMToken: async (token: string) => {
+    try {
+      const { user } = get();
+      
+      if (!user?.id) {
+        console.log('⚠️ FCM Token kaydedilemedi: Kullanıcı oturum açmamış');
+        return;
+      }
+
+      // FCM servisine token kaydetme işlemini delege et
+      // Servis kendi içinde tekrar eden çağrıları kontrol ediyor
+      await fcmTokenService.saveToken(user.id, { token });
+    } catch (error) {
+      console.error('❌ FCM Token kaydetme hatası:', error);
+    }
+  },
+
   // Initialize auth state
   initialize: async () => {
     try {
@@ -107,17 +139,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user,
           isInitialized: true,
         });
+        
+        console.log('🔐 Mevcut oturum bulundu:', user?.email);
       } else {
         set({
           session: null,
           user: null,
           isInitialized: true,
         });
+        
+        console.log('🔓 Aktif oturum bulunamadı');
       }
 
       // Listen to auth state changes
       authService.onAuthStateChange((event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth durumu değişti:', event, session?.user?.email);
         
         if (session) {
           set({
@@ -133,7 +169,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      console.error('❌ Auth başlatma hatası:', error);
       set({
         session: null,
         user: null,
