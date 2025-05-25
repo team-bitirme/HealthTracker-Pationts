@@ -6,120 +6,104 @@ import { MessageBubble, MessageBubbleProps } from '~/components/MessageBubble';
 import { MessageInput } from '~/components/MessageInput';
 import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
-
-// Mock data - daha sonra gerçek verilerle değiştirilecek
-const mockMessages: MessageBubbleProps[] = [
-  {
-    id: '1',
-    content: 'Merhaba! Size nasıl yardımcı olabilirim?',
-    timestamp: '09:00',
-    isOwn: false,
-    type: 'doctor',
-    senderName: 'Dr. Mehmet Yılmaz',
-    status: 'read',
-  },
-  {
-    id: '2',
-    content: 'Merhaba doktor, son ölçümlerimle ilgili sorularım var.',
-    timestamp: '09:15',
-    isOwn: true,
-    type: 'user',
-    status: 'read',
-  },
-  {
-    id: '3',
-    content: 'Tabii ki, hangi ölçümlerinizle ilgili soru sormak istiyorsunuz?',
-    timestamp: '09:16',
-    isOwn: false,
-    type: 'doctor',
-    senderName: 'Dr. Mehmet Yılmaz',
-    status: 'read',
-  },
-  {
-    id: '4',
-    content: 'Kan şekeri değerlerim son birkaç gündür biraz yüksek çıkıyor.',
-    timestamp: '09:20',
-    isOwn: true,
-    type: 'user',
-    status: 'delivered',
-  },
-  {
-    id: '5',
-    content: 'Anlıyorum. Değerlerinizi inceleyip size öneriler sunacağım. Lütfen biraz bekleyin.',
-    timestamp: '09:22',
-    isOwn: false,
-    type: 'doctor',
-    senderName: 'Dr. Mehmet Yılmaz',
-    status: 'read',
-  },
-  {
-    id: '6',
-    content: 'Hasta verileriniz analiz ediliyor...',
-    timestamp: '09:23',
-    isOwn: false,
-    type: 'system',
-    status: 'read',
-  },
-  {
-    id: '7',
-    content: 'Son 7 günlük kan şekeri ortalamanız 145 mg/dL. Normal değerler 70-140 mg/dL arasındadır. Diyetinizi gözden geçirmenizi öneriyorum.',
-    timestamp: '09:25',
-    isOwn: false,
-    type: 'ai',
-    senderName: 'DiabetesAI Asistan',
-    status: 'read',
-  },
-];
+import { useMessagesStore } from '~/store/messagesStore';
+import { useMessageChecker } from '~/lib/hooks/useMessageChecker';
 
 export default function MesajlarEkrani() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
-  const [messages, setMessages] = useState<MessageBubbleProps[]>(mockMessages);
-  const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  const {
+    messages,
+    isLoading,
+    isSending,
+    error,
+    doctorInfo,
+    loadMessages,
+    sendMessage,
+    loadDoctorInfo,
+    loadMessageTypes,
+    clearMessages,
+    setError
+  } = useMessagesStore();
+
+  // Yeni mesaj kontrolü
+  useMessageChecker({
+    enabled: true,
+    interval: 30000, // 30 saniye
+    onNewMessage: () => {
+      // Yeni mesaj geldiğinde mesajları yeniden yükle
+      if (user?.id && doctorInfo?.doctor_user_id) {
+        loadMessages(user.id, doctorInfo.doctor_user_id);
+      }
+    }
+  });
+
   useEffect(() => {
-    // Ekran açıldığında en son mesaja scroll yap
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, []);
+    const initializeMessages = async () => {
+      if (!user?.id) return;
 
-  const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim()) return;
-
-    const newMessage: MessageBubbleProps = {
-      id: Date.now().toString(),
-      content: messageText,
-      timestamp: new Date().toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      isOwn: true,
-      type: 'user',
-      status: 'sending',
+      try {
+        // Mesaj tiplerini yükle
+        await loadMessageTypes();
+        
+        // Doktor bilgisini yükle
+        await loadDoctorInfo(user.id);
+        
+        // Doktor bilgisi yüklendikten sonra mesajları yükle
+        // Bu useEffect doctorInfo değiştiğinde tekrar çalışacak
+      } catch (error) {
+        console.error('Mesaj sistemi başlatılırken hata:', error);
+      }
     };
 
-    setMessages(prev => [...prev, newMessage]);
-    setIsLoading(true);
+    initializeMessages();
+  }, [user?.id, loadMessageTypes, loadDoctorInfo]);
 
-    // Mesajı gönderme simülasyonu
-    setTimeout(() => {
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === newMessage.id 
-            ? { ...msg, status: 'sent' as const }
-            : msg
-        )
-      );
-      setIsLoading(false);
-      
-      // En son mesaja scroll yap
+  useEffect(() => {
+    // Doktor bilgisi yüklendikten sonra mesajları yükle
+    if (user?.id && doctorInfo?.doctor_user_id) {
+      loadMessages(user.id, doctorInfo.doctor_user_id);
+    }
+  }, [user?.id, doctorInfo?.doctor_user_id, loadMessages]);
+
+  useEffect(() => {
+    // Mesajlar güncellendiğinde en sona scroll yap
+    if (messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    }, 1000);
+    }
+  }, [messages.length]);
+
+  useEffect(() => {
+    // Ekran kapanırken mesajları temizle
+    return () => {
+      clearMessages();
+    };
+  }, [clearMessages]);
+
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim() || !user?.id || !doctorInfo?.doctor_user_id) {
+      return;
+    }
+
+    try {
+      await sendMessage(messageText, user.id, doctorInfo.doctor_user_id, 1); // 1 = genel mesaj tipi
+      
+      // Mesaj gönderildikten sonra en sona scroll yap
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      Alert.alert(
+        'Hata',
+        'Mesaj gönderilemedi. Lütfen tekrar deneyin.',
+        [{ text: 'Tamam' }]
+      );
+    }
   };
 
   const handleBackPress = () => {
@@ -127,14 +111,25 @@ export default function MesajlarEkrani() {
   };
 
   const handleInfoPress = () => {
-    Alert.alert(
-      'Mesajlaşma Bilgisi',
-      'Bu özellik henüz geliştirme aşamasındadır. Yakında doktorunuzla güvenli mesajlaşma imkanı sunulacaktır.',
-      [{ text: 'Tamam' }]
-    );
+    if (doctorInfo) {
+      Alert.alert(
+        'Doktor Bilgisi',
+        `${doctorInfo.doctor_name} ile mesajlaşıyorsunuz.`,
+        [{ text: 'Tamam' }]
+      );
+    } else {
+      Alert.alert(
+        'Bilgi',
+        'Henüz bir doktorunuz atanmamış. Lütfen yöneticinizle iletişime geçin.',
+        [{ text: 'Tamam' }]
+      );
+    }
   };
 
   const getDoctorName = () => {
+    if (doctorInfo?.doctor_name) {
+      return doctorInfo.doctor_name;
+    }
     if (profile?.doctor_name && profile?.doctor_surname) {
       return `Dr. ${profile.doctor_name} ${profile.doctor_surname}`;
     }
@@ -157,6 +152,22 @@ export default function MesajlarEkrani() {
     offset: 80 * index,
     index,
   });
+
+  // Error handling
+  useEffect(() => {
+    if (error) {
+      Alert.alert(
+        'Hata',
+        error,
+        [
+          { 
+            text: 'Tamam', 
+            onPress: () => setError(null) 
+          }
+        ]
+      );
+    }
+  }, [error, setError]);
 
   return (
     <KeyboardAvoidingView 
@@ -183,13 +194,23 @@ export default function MesajlarEkrani() {
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         windowSize={10}
+        refreshing={isLoading}
+        onRefresh={() => {
+          if (user?.id && doctorInfo?.doctor_user_id) {
+            loadMessages(user.id, doctorInfo.doctor_user_id);
+          }
+        }}
       />
       
       <MessageInput
         onSendMessage={handleSendMessage}
-        disabled={false} // Şimdilik false, daha sonra doktor ataması kontrolü eklenecek
-        isLoading={isLoading}
-        placeholder="Mesajınızı yazın..."
+        disabled={!doctorInfo?.doctor_user_id || isSending}
+        isLoading={isSending}
+        placeholder={
+          doctorInfo?.doctor_user_id 
+            ? "Mesajınızı yazın..." 
+            : "Doktor ataması bekleniyor..."
+        }
       />
     </KeyboardAvoidingView>
   );
@@ -198,12 +219,13 @@ export default function MesajlarEkrani() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
   messagesList: {
     flex: 1,
   },
   messagesContent: {
     paddingVertical: 16,
+    paddingHorizontal: 16,
   },
 }); 

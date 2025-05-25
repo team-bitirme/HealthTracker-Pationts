@@ -12,6 +12,8 @@ import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { patientService } from '~/services/patientService';
 import { useFCMToken } from '~/lib/hooks/useFCMToken';
+import { useMessageChecker } from '~/lib/hooks/useMessageChecker';
+import { useMessagesStore } from '~/store/messagesStore';
 
 interface MetricData {
   id: string;
@@ -29,16 +31,30 @@ export default function AnaSayfa() {
   const { profile, fetchProfile } = useProfileStore();
   const [metrics, setMetrics] = useState<MetricData[]>([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
   
   // FCM Token yönetimi
   const { token: fcmToken, isLoading: fcmLoading, error: fcmError } = useFCMToken();
+  
+  // Mesaj store
+  const { loadDoctorInfo, doctorInfo } = useMessagesStore();
+  
+  // Yeni mesaj kontrolü
+  useMessageChecker({
+    enabled: true,
+    interval: 30000, // 30 saniye
+    onNewMessage: () => {
+      setHasNewMessages(true);
+    }
+  });
 
   useEffect(() => {
     if (user?.id) {
       console.log('🔐 Kullanıcı girişi:', user.email);
       fetchProfile(user.id);
+      loadDoctorInfo(user.id);
     }
-  }, [user?.id, fetchProfile]);
+  }, [user?.id, fetchProfile, loadDoctorInfo]);
 
   useEffect(() => {
     if (profile?.patient_id) {
@@ -146,6 +162,7 @@ export default function AnaSayfa() {
 
   const handleMessagesPress = () => {
     console.log('💬 Mesajlar ekranına yönlendiriliyor');
+    setHasNewMessages(false); // Mesajlar ekranına gidince yeni mesaj işaretini kaldır
     router.push('/mesajlar' as any);
   };
 

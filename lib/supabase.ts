@@ -4,8 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from './types/supabase';
 
 // Environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://vdxnnxkgrgghairrzrvo.supabase.co';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeG5ueGtncmdnaGFpcnJ6cnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjE3NzUsImV4cCI6MjA2MzU5Nzc3NX0.KpFBsYSb4ENDFtczbt-JTRrj0MihDYTeYPCdvJqhgyM';
+const supabaseUrl = 'https://vdxnnxkgrgghairrzrvo.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeG5ueGtncmdnaGFpcnJ6cnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjE3NzUsImV4cCI6MjA2MzU5Nzc3NX0.KpFBsYSb4ENDFtczbt-JTRrj0MihDYTeYPCdvJqhgyM';
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
