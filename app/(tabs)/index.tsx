@@ -8,6 +8,8 @@ import { ScreenContent } from '~/components/ScreenContent';
 import { CustomHeader } from '~/components/CustomHeader';
 import { MetricsGrid } from '~/components/MetricsGrid';
 import { MessagesPreview, Message } from '~/components/MessagesPreview';
+import { ComplaintsPreview } from '~/components/ComplaintsPreview';
+import { useComplaintsStore, Complaint } from '~/store/complaintsStore';
 import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { patientService } from '~/services/patientService';
@@ -29,23 +31,24 @@ export default function AnaSayfa() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { profile, fetchProfile } = useProfileStore();
+  const { complaints, fetchComplaints, isLoading: complaintsLoading } = useComplaintsStore();
   const [metrics, setMetrics] = useState<MetricData[]>([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-  
+
   // FCM Token yönetimi
   const { token: fcmToken, isLoading: fcmLoading, error: fcmError } = useFCMToken();
-  
+
   // Mesaj store
   const { loadDoctorInfo, doctorInfo } = useMessagesStore();
-  
+
   // Yeni mesaj kontrolü
   useMessageChecker({
     enabled: true,
     interval: 30000, // 30 saniye
     onNewMessage: () => {
       setHasNewMessages(true);
-    }
+    },
   });
 
   useEffect(() => {
@@ -63,15 +66,23 @@ export default function AnaSayfa() {
     }
   }, [profile?.patient_id]);
 
+  // Şikayetleri yükle
+  useEffect(() => {
+    if (profile?.patient_id) {
+      console.log('🩺 Şikayetler yükleniyor...', profile.patient_id);
+      fetchComplaints(profile.patient_id);
+    }
+  }, [profile?.patient_id, fetchComplaints]);
+
   // FCM Token durumunu logla (sadece değişiklik olduğunda)
   useEffect(() => {
     if (fcmToken && user?.id) {
       console.log('🔔 FCM Token hazır:', {
         tokenLength: fcmToken.length,
-        userId: user.id
+        userId: user.id,
       });
     }
-    
+
     if (fcmError) {
       console.log('❌ FCM Token hatası:', fcmError);
     }
@@ -82,12 +93,14 @@ export default function AnaSayfa() {
       console.log('❌ Hasta ID bulunamadı');
       return;
     }
-    
+
     setIsLoadingMetrics(true);
-    
+
     try {
-      const measurements = await patientService.getLatestMeasurementsWithIdsForDashboard(profile.patient_id);
-      
+      const measurements = await patientService.getLatestMeasurementsWithIdsForDashboard(
+        profile.patient_id
+      );
+
       const metricsData: MetricData[] = [
         {
           id: 'heart-rate',
@@ -126,7 +139,7 @@ export default function AnaSayfa() {
           measurementId: measurements.temperature?.id,
         },
       ];
-      
+
       console.log('✅ Metrikler yüklendi');
       setMetrics(metricsData);
     } catch (error) {
@@ -142,21 +155,18 @@ export default function AnaSayfa() {
   const handleMetricPress = (metricId: string) => {
     const metric = metrics.find((m) => m.id === metricId);
     console.log('📊 Metrik seçildi:', metric?.title);
-    
+
     if (metric?.measurementId) {
       console.log('📋 Ölçüm detayına yönlendiriliyor:', metric.measurementId);
       router.push({
         pathname: '/olcum-detay' as any,
-        params: { 
+        params: {
           measurementId: metric.measurementId,
-          categoryTitle: metric.title 
-        }
+          categoryTitle: metric.title,
+        },
       });
     } else {
-      Alert.alert(
-        'Veri Bulunamadı',
-        `${metric?.title} için henüz ölçüm verisi bulunmuyor.`
-      );
+      Alert.alert('Veri Bulunamadı', `${metric?.title} için henüz ölçüm verisi bulunmuyor.`);
     }
   };
 
@@ -166,25 +176,49 @@ export default function AnaSayfa() {
     router.push('/mesajlar' as any);
   };
 
+  const handleAddComplaintPress = () => {
+    console.log('🩺 Yeni şikayet ekranına yönlendiriliyor');
+    router.push('/yeni-sikayet' as any);
+  };
+
+  const handleComplaintPress = (complaint: Complaint) => {
+    console.log('🩺 Şikayet düzenleme ekranına yönlendiriliyor:', complaint.id);
+    router.push({
+      pathname: '/sikayet-duzenle' as any,
+      params: { complaintId: complaint.id },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollViewContent}>
-        <CustomHeader userName={profile ? `${profile.name || ''} ${profile.surname || ''}`.trim() || 'Kullanıcı' : 'Kullanıcı'} />
+        <CustomHeader
+          userName={
+            profile
+              ? `${profile.name || ''} ${profile.surname || ''}`.trim() || 'Kullanıcı'
+              : 'Kullanıcı'
+          }
+        />
         <View style={styles.metricsContainer}>
-          <MetricsGrid 
-            metrics={metrics} 
+          <MetricsGrid
+            metrics={metrics}
             onCellPress={handleMetricPress}
             isLoading={isLoadingMetrics}
           />
         </View>
 
         <View style={styles.messagesSection}>
-          <MessagesPreview
-            messages={messages}
-            onPress={handleMessagesPress}
+          <MessagesPreview messages={messages} onPress={handleMessagesPress} />
+        </View>
+
+        <View style={styles.complaintsSection}>
+          <ComplaintsPreview
+            complaints={complaints}
+            onAddPress={handleAddComplaintPress}
+            onComplaintPress={handleComplaintPress}
           />
         </View>
       </ScrollView>
@@ -208,6 +242,9 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   messagesSection: {
+    marginTop: 16,
+  },
+  complaintsSection: {
     marginTop: 16,
   },
   sectionTitle: {

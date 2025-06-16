@@ -11,19 +11,19 @@ export default function RootLayout() {
     const initializeApp = async () => {
       try {
         console.log('🚀 Uygulama başlatılıyor...');
-        
+
         // Firebase'i başlat
         await firebaseService.initialize();
-        
+
         // Firebase mesaj dinleyicilerini ayarla
         const unsubscribeForeground = firebaseService.setupForegroundMessageListener();
         const unsubscribeNotificationOpened = firebaseService.setupNotificationOpenedListener();
-        
+
         // Auth durumunu başlat
         await initialize();
-        
+
         console.log('✅ Uygulama başarıyla başlatıldı');
-        
+
         // Cleanup function
         return () => {
           unsubscribeForeground();
@@ -49,6 +49,8 @@ export default function RootLayout() {
       <Stack.Screen name="olcum-gecmisi" options={{ headerShown: false }} />
       <Stack.Screen name="olcum-detay" options={{ headerShown: false }} />
       <Stack.Screen name="mesajlar" options={{ headerShown: false }} />
+      <Stack.Screen name="yeni-sikayet" options={{ headerShown: false }} />
+      <Stack.Screen name="sikayet-duzenle" options={{ headerShown: false }} />
     </Stack>
   );
 }

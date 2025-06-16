@@ -27,6 +27,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#ffffff"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
