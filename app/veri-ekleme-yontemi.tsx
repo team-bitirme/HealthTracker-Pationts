@@ -63,7 +63,7 @@ export default function VeriEklemeYontemi() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
   content: {
     flex: 1,

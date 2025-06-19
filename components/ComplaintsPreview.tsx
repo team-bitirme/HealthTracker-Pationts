@@ -61,49 +61,71 @@ export function ComplaintsPreview({
   const renderComplaintCard = (complaint: Complaint) => {
     const priorityColor = getPriorityColor(complaint.priority_level);
     const priorityIcon = getPriorityIcon(complaint.priority_level);
+    const cardColor = getCardColor(complaint.priority_level);
+    const priorityDots = getPriorityDots(complaint.priority_level);
 
     return (
       <TouchableOpacity
         key={complaint.id}
-        style={[styles.complaintCard, { borderLeftColor: priorityColor }]}
+        style={[styles.complaintCard, { backgroundColor: cardColor, borderColor: priorityColor }]}
         onPress={() => onComplaintPress?.(complaint)}
         activeOpacity={0.7}>
-        <View style={styles.cardHeader}>
-          <View style={styles.categoryInfo}>
-            <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
-            <Text style={styles.categoryText}>
-              {complaint.category_name ?? 'Kategori belirtilmemiş'}
-            </Text>
-            {complaint.is_critical && (
-              <FontAwesome
-                name="exclamation-triangle"
-                size={12}
-                color="#dc3545"
-                style={styles.criticalIcon}
-              />
-            )}
-          </View>
-          <FontAwesome name={priorityIcon as any} size={14} color={priorityColor} />
+        {/* Priority Badge - Sağ üst köşe */}
+        <View style={styles.priorityBadge}>
+          {priorityDots.map((_, index) => (
+            <View key={index} style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
+          ))}
         </View>
 
-        <Text style={styles.subcategoryText}>
+        <View style={styles.cardHeader}>
+          <FontAwesome name="stethoscope" size={16} color={priorityColor} />
+          <Text style={[styles.cardTitle, { color: priorityColor }]}>
+            {complaint.category_name ?? 'Kategori belirtilmemiş'}
+          </Text>
+          {complaint.is_critical && (
+            <View style={styles.criticalBadge}>
+              <Text style={styles.criticalBadgeText}>KRİTİK</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.cardSubtitle}>
           {complaint.subcategory_name ?? 'Alt kategori belirtilmemiş'}
         </Text>
 
-        <Text style={styles.descriptionText} numberOfLines={2}>
+        <Text style={styles.cardContent} numberOfLines={2}>
           {complaint.description || 'Açıklama yok'}
         </Text>
 
-        <View style={styles.cardFooter}>
-          <Text style={styles.dateText}>Başlangıç Tarihi: </Text>
-          <Text style={styles.dateText}>{formatDate(complaint.start_date)}</Text>
-          {/* <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: '#28a745' }]} />
-            <Text style={styles.statusText}>Aktif</Text>
-          </View> */}
-        </View>
+        <Text style={styles.cardTime}>{formatDate(complaint.start_date)}</Text>
       </TouchableOpacity>
     );
+  };
+
+  const getCardColor = (priorityLevel: string | null | undefined) => {
+    switch (priorityLevel) {
+      case 'high':
+        return '#fff5f5'; // Açık kırmızı
+      case 'medium':
+        return '#fff8f1'; // Açık turuncu
+      case 'low':
+        return '#f8fff9'; // Açık yeşil
+      default:
+        return '#f8f9fa'; // Açık gri
+    }
+  };
+
+  const getPriorityDots = (priorityLevel: string | null | undefined) => {
+    switch (priorityLevel) {
+      case 'high':
+        return [1, 2, 3]; // 3 nokta
+      case 'medium':
+        return [1, 2]; // 2 nokta
+      case 'low':
+        return [1]; // 1 nokta
+      default:
+        return [1]; // Varsayılan 1 nokta
+    }
   };
 
   return (
@@ -233,77 +255,61 @@ const styles = StyleSheet.create({
     maxHeight: 250,
   },
   complaintCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    borderWidth: 1,
+    borderRadius: 8,
     padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: 12,
+    position: 'relative',
   },
-  cardHeader: {
+  priorityBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  categoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    gap: 3,
   },
   priorityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007bff',
-    flex: 1,
-  },
-  criticalIcon: {
-    marginLeft: 4,
-  },
-  subcategoryText: {
-    fontSize: 13,
-    color: '#6c757d',
-    marginBottom: 6,
-    marginLeft: 16,
-  },
-  descriptionText: {
-    fontSize: 14,
-    color: '#212529',
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#6c757d',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 4,
   },
-  statusText: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
+  },
+  criticalBadge: {
+    backgroundColor: '#dc3545',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginRight: 30,
+  },
+  criticalBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginBottom: 8,
+    marginLeft: 24,
+  },
+  cardContent: {
+    fontSize: 14,
+    color: '#212529',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  cardTime: {
     fontSize: 12,
-    color: '#28a745',
-    fontWeight: '500',
+    color: '#6c757d',
   },
 });

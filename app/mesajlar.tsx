@@ -7,7 +7,6 @@ import { MessageInput } from '~/components/MessageInput';
 import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { useMessagesStore } from '~/store/messagesStore';
-import { useMessageChecker } from '~/lib/hooks/useMessageChecker';
 
 export default function MesajlarEkrani() {
   const router = useRouter();
@@ -25,21 +24,13 @@ export default function MesajlarEkrani() {
     sendMessage,
     loadDoctorInfo,
     loadMessageTypes,
+    updateDashboardInfo,
+    markDoctorMessagesAsRead,
     clearMessages,
-    setError
+    setError,
   } = useMessagesStore();
 
-  // Yeni mesaj kontrolü
-  useMessageChecker({
-    enabled: true,
-    interval: 30000, // 30 saniye
-    onNewMessage: () => {
-      // Yeni mesaj geldiğinde mesajları yeniden yükle
-      if (user?.id && doctorInfo?.doctor_user_id) {
-        loadMessages(user.id, doctorInfo.doctor_user_id);
-      }
-    }
-  });
+  // Mesaj kontrolü artık global olarak _layout.tsx'te yapılıyor
 
   useEffect(() => {
     const initializeMessages = async () => {
@@ -48,10 +39,10 @@ export default function MesajlarEkrani() {
       try {
         // Mesaj tiplerini yükle
         await loadMessageTypes();
-        
+
         // Doktor bilgisini yükle
         await loadDoctorInfo(user.id);
-        
+
         // Doktor bilgisi yüklendikten sonra mesajları yükle
         // Bu useEffect doctorInfo değiştiğinde tekrar çalışacak
       } catch (error) {
@@ -65,9 +56,26 @@ export default function MesajlarEkrani() {
   useEffect(() => {
     // Doktor bilgisi yüklendikten sonra mesajları yükle
     if (user?.id && doctorInfo?.doctor_user_id) {
-      loadMessages(user.id, doctorInfo.doctor_user_id);
+      const initializeDoctorChat = async () => {
+        // Mesajları yükle
+        await loadMessages(user.id, doctorInfo.doctor_user_id);
+
+        // Doktor mesajlarını okundu olarak işaretle
+        await markDoctorMessagesAsRead(user.id);
+
+        // Dashboard bilgilerini güncelle
+        await updateDashboardInfo(user.id);
+      };
+
+      initializeDoctorChat();
     }
-  }, [user?.id, doctorInfo?.doctor_user_id, loadMessages]);
+  }, [
+    user?.id,
+    doctorInfo?.doctor_user_id,
+    loadMessages,
+    markDoctorMessagesAsRead,
+    updateDashboardInfo,
+  ]);
 
   useEffect(() => {
     // Mesajlar güncellendiğinde en sona scroll yap
@@ -79,11 +87,22 @@ export default function MesajlarEkrani() {
   }, [messages.length]);
 
   useEffect(() => {
-    // Ekran kapanırken mesajları temizle
-    return () => {
-      clearMessages();
+    // Ekran açıldığında doktor mesajlarını okundu olarak işaretle
+    const markAsRead = async () => {
+      if (user?.id) {
+        await markDoctorMessagesAsRead(user.id);
+        await updateDashboardInfo(user.id);
+      }
     };
-  }, [clearMessages]);
+
+    markAsRead();
+
+    // Cleanup: Ekran kapanırken sadece mesaj listesini temizle, dashboard verilerini koru
+    return () => {
+      // clearMessages() çağırmıyoruz çünkü dashboard verilerini korumalıyız
+      console.log('🚪 Mesaj ekranı kapanıyor, dashboard verileri korunuyor');
+    };
+  }, [user?.id, markDoctorMessagesAsRead, updateDashboardInfo]);
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || !user?.id || !doctorInfo?.doctor_user_id) {
@@ -92,17 +111,13 @@ export default function MesajlarEkrani() {
 
     try {
       await sendMessage(messageText, user.id, doctorInfo.doctor_user_id, 1); // 1 = genel mesaj tipi
-      
+
       // Mesaj gönderildikten sonra en sona scroll yap
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      Alert.alert(
-        'Hata',
-        'Mesaj gönderilemedi. Lütfen tekrar deneyin.',
-        [{ text: 'Tamam' }]
-      );
+      Alert.alert('Hata', 'Mesaj gönderilemedi. Lütfen tekrar deneyin.', [{ text: 'Tamam' }]);
     }
   };
 
@@ -112,11 +127,9 @@ export default function MesajlarEkrani() {
 
   const handleInfoPress = () => {
     if (doctorInfo) {
-      Alert.alert(
-        'Doktor Bilgisi',
-        `${doctorInfo.doctor_name} ile mesajlaşıyorsunuz.`,
-        [{ text: 'Tamam' }]
-      );
+      Alert.alert('Doktor Bilgisi', `${doctorInfo.doctor_name} ile mesajlaşıyorsunuz.`, [
+        { text: 'Tamam' },
+      ]);
     } else {
       Alert.alert(
         'Bilgi',
@@ -143,9 +156,7 @@ export default function MesajlarEkrani() {
     return 'Çevrimiçi';
   };
 
-  const renderMessage = ({ item }: { item: MessageBubbleProps }) => (
-    <MessageBubble {...item} />
-  );
+  const renderMessage = ({ item }: { item: MessageBubbleProps }) => <MessageBubble {...item} />;
 
   const getItemLayout = (_: any, index: number) => ({
     length: 80, // Ortalama mesaj yüksekliği
@@ -156,32 +167,27 @@ export default function MesajlarEkrani() {
   // Error handling
   useEffect(() => {
     if (error) {
-      Alert.alert(
-        'Hata',
-        error,
-        [
-          { 
-            text: 'Tamam', 
-            onPress: () => setError(null) 
-          }
-        ]
-      );
+      Alert.alert('Hata', error, [
+        {
+          text: 'Tamam',
+          onPress: () => setError(null),
+        },
+      ]);
     }
   }, [error, setError]);
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
       <ChatHeader
         title={getDoctorName()}
         subtitle={getDoctorSubtitle()}
         onBackPress={handleBackPress}
         onInfoPress={handleInfoPress}
       />
-      
+
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -201,15 +207,13 @@ export default function MesajlarEkrani() {
           }
         }}
       />
-      
+
       <MessageInput
         onSendMessage={handleSendMessage}
         disabled={!doctorInfo?.doctor_user_id || isSending}
         isLoading={isSending}
         placeholder={
-          doctorInfo?.doctor_user_id 
-            ? "Mesajınızı yazın..." 
-            : "Doktor ataması bekleniyor..."
+          doctorInfo?.doctor_user_id ? 'Mesajınızı yazın...' : 'Doktor ataması bekleniyor...'
         }
       />
     </KeyboardAvoidingView>
@@ -228,4 +232,4 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
   },
-}); 
+});

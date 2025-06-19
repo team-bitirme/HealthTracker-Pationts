@@ -12,19 +12,19 @@ export interface MessageBubbleProps {
   status?: 'sending' | 'sent' | 'delivered' | 'read';
 }
 
-export function MessageBubble({ 
-  content, 
-  timestamp, 
-  isOwn, 
-  type, 
+export function MessageBubble({
+  content,
+  timestamp,
+  isOwn,
+  type,
   senderName,
-  status = 'sent'
+  status = 'sent',
 }: MessageBubbleProps) {
   const getBubbleStyle = () => {
     if (isOwn) {
       return [styles.bubble, styles.ownBubble];
     }
-    
+
     switch (type) {
       case 'doctor':
         return [styles.bubble, styles.doctorBubble];
@@ -41,7 +41,7 @@ export function MessageBubble({
     if (isOwn) {
       return styles.ownText;
     }
-    
+
     switch (type) {
       case 'system':
         return styles.systemText;
@@ -65,7 +65,7 @@ export function MessageBubble({
 
   const getStatusIcon = () => {
     if (!isOwn) return null;
-    
+
     switch (status) {
       case 'sending':
         return <FontAwesome name="clock-o" size={12} color="#6c757d" />;
@@ -86,11 +86,11 @@ export function MessageBubble({
           <Text style={styles.senderName}>{senderName}</Text>
         </View>
       )}
-      
+
       <View style={getBubbleStyle()}>
         <Text style={getTextStyle()}>{content}</Text>
       </View>
-      
+
       <View style={styles.timestampContainer}>
         <Text style={styles.timestamp}>{timestamp}</Text>
         {getStatusIcon()}
@@ -184,4 +184,4 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     marginRight: 4,
   },
-}); 
+});

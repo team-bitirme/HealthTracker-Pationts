@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Alert, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { ScreenContent } from '~/components/ScreenContent';
@@ -14,7 +15,7 @@ import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { patientService } from '~/services/patientService';
 import { useFCMToken } from '~/lib/hooks/useFCMToken';
-import { useMessageChecker } from '~/lib/hooks/useMessageChecker';
+
 import { useMessagesStore } from '~/store/messagesStore';
 
 interface MetricData {
@@ -40,24 +41,27 @@ export default function AnaSayfa() {
   const { token: fcmToken, isLoading: fcmLoading, error: fcmError } = useFCMToken();
 
   // Mesaj store
-  const { loadDoctorInfo, doctorInfo } = useMessagesStore();
+  const { dashboardDoctorInfo, dashboardAiInfo, updateDashboardInfo } = useMessagesStore();
 
-  // Yeni mesaj kontrolü
-  useMessageChecker({
-    enabled: true,
-    interval: 30000, // 30 saniye
-    onNewMessage: () => {
-      setHasNewMessages(true);
-    },
-  });
+  // Mesaj kontrolü artık global olarak _layout.tsx'te yapılıyor
+
+  // Ana sayfaya focus olduğunda dashboard'ı güncelle
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 Ana sayfa focus oldu, dashboard güncelleniyor...');
+      if (user?.id) {
+        updateDashboardInfo(user.id);
+      }
+    }, [user?.id, updateDashboardInfo])
+  );
 
   useEffect(() => {
     if (user?.id) {
       console.log('🔐 Kullanıcı girişi:', user.email);
       fetchProfile(user.id);
-      loadDoctorInfo(user.id);
+      initializeMessaging(user.id);
     }
-  }, [user?.id, fetchProfile, loadDoctorInfo]);
+  }, [user?.id, fetchProfile]);
 
   useEffect(() => {
     if (profile?.patient_id) {
@@ -87,6 +91,21 @@ export default function AnaSayfa() {
       console.log('❌ FCM Token hatası:', fcmError);
     }
   }, [fcmToken, fcmError]);
+
+  // Global mesaj kontrolü _layout.tsx'te yönetiliyor
+
+  const initializeMessaging = async (userId: string) => {
+    try {
+      console.log('💬 Dashboard mesaj bilgileri güncelleniyor...');
+
+      // Dashboard bilgilerini güncelle (global sistem zaten çalışıyor)
+      await updateDashboardInfo(userId);
+
+      console.log('✅ Dashboard mesaj bilgileri hazır');
+    } catch (error) {
+      console.error('❌ Dashboard mesaj bilgileri güncellenemedi:', error);
+    }
+  };
 
   const loadMetrics = async () => {
     if (!profile?.patient_id) {
@@ -149,8 +168,56 @@ export default function AnaSayfa() {
     }
   };
 
-  // Mesajlar - şimdilik boş array, daha sonra gerçek verilerle doldurulacak
-  const messages: Message[] = [];
+  // Mesajlar - dashboard bilgilerinden alıyoruz
+  const doctorMessages: Message[] = [];
+  const aiMessages: Message[] = [];
+
+  // Dashboard verilerini Message formatına çevir
+  // Önce okunmamış mesajı kontrol et, yoksa en son mesajı göster
+  if (dashboardDoctorInfo.lastUnreadMessage) {
+    doctorMessages.push({
+      id: dashboardDoctorInfo.lastUnreadMessage.id,
+      sender: dashboardDoctorInfo.lastUnreadMessage.senderName || 'Doktor',
+      content: dashboardDoctorInfo.lastUnreadMessage.content,
+      timestamp: dashboardDoctorInfo.lastUnreadMessage.timestamp,
+      isUnread: true,
+      type: 'doctor',
+    });
+  } else if (dashboardDoctorInfo.latestMessage) {
+    doctorMessages.push({
+      id: dashboardDoctorInfo.latestMessage.id,
+      sender:
+        dashboardDoctorInfo.latestMessage.senderName ||
+        (dashboardDoctorInfo.latestMessage.isOwn ? 'Sen' : 'Doktor'),
+      content: dashboardDoctorInfo.latestMessage.content,
+      timestamp: dashboardDoctorInfo.latestMessage.timestamp,
+      isUnread: false,
+      type: 'doctor',
+    });
+  }
+
+  // AI mesajları için de aynı mantık
+  if (dashboardAiInfo.lastUnreadMessage) {
+    aiMessages.push({
+      id: dashboardAiInfo.lastUnreadMessage.id,
+      sender: dashboardAiInfo.lastUnreadMessage.senderName || 'AI Asistan',
+      content: dashboardAiInfo.lastUnreadMessage.content,
+      timestamp: dashboardAiInfo.lastUnreadMessage.timestamp,
+      isUnread: true,
+      type: 'ai',
+    });
+  } else if (dashboardAiInfo.latestMessage) {
+    aiMessages.push({
+      id: dashboardAiInfo.latestMessage.id,
+      sender:
+        dashboardAiInfo.latestMessage.senderName ||
+        (dashboardAiInfo.latestMessage.isOwn ? 'Sen' : 'AI Asistan'),
+      content: dashboardAiInfo.latestMessage.content,
+      timestamp: dashboardAiInfo.latestMessage.timestamp,
+      isUnread: false,
+      type: 'ai',
+    });
+  }
 
   const handleMetricPress = (metricId: string) => {
     const metric = metrics.find((m) => m.id === metricId);
@@ -170,10 +237,15 @@ export default function AnaSayfa() {
     }
   };
 
-  const handleMessagesPress = () => {
-    console.log('💬 Mesajlar ekranına yönlendiriliyor');
-    setHasNewMessages(false); // Mesajlar ekranına gidince yeni mesaj işaretini kaldır
+  const handleDoctorPress = () => {
+    console.log('💬 Doktor mesajlarına yönlendiriliyor');
+    setHasNewMessages(false);
     router.push('/mesajlar' as any);
+  };
+
+  const handleAssistantPress = () => {
+    console.log('🤖 AI Asistan mesajlarına yönlendiriliyor');
+    router.push('/ai-asistan' as any);
   };
 
   const handleAddComplaintPress = () => {
@@ -211,7 +283,16 @@ export default function AnaSayfa() {
         </View>
 
         <View style={styles.messagesSection}>
-          <MessagesPreview messages={messages} onPress={handleMessagesPress} />
+          <MessagesPreview
+            messages={[]}
+            onDoctorPress={handleDoctorPress}
+            onAssistantPress={handleAssistantPress}
+            doctorMessages={doctorMessages}
+            aiMessages={aiMessages}
+            hasNewMessages={hasNewMessages}
+            unreadDoctorCount={dashboardDoctorInfo.unreadCount}
+            unreadAiCount={dashboardAiInfo.unreadCount}
+          />
         </View>
 
         <View style={styles.complaintsSection}>

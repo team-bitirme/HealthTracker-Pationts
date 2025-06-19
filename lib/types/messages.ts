@@ -13,6 +13,7 @@ export interface Message {
   created_at: string | null;
   updated_at: string | null;
   is_deleted: boolean | null;
+  is_read: boolean | null;
 }
 
 export interface MessageWithDetails extends Message {
@@ -50,4 +51,4 @@ export interface MessagesResponse {
   messages: MessageWithDetails[];
   total_count: number;
   has_more: boolean;
-} 
+}
