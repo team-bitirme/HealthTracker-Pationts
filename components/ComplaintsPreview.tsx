@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   complaintsContainer: {
-    maxHeight: 250,
+    // maxHeight: 300,
   },
   complaintCard: {
     borderWidth: 1,

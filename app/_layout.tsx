@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useMessagesStore } from '../store/messagesStore';
 import { firebaseService } from '../lib/firebase';
@@ -80,20 +81,24 @@ export default function RootLayout() {
   }, [user?.id, loadDoctorInfo, updateDashboardInfo, startMessageChecking, stopMessageChecking]);
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="veri-ekleme-yontemi" options={{ headerShown: false }} />
-      <Stack.Screen name="el-ile-giris" options={{ headerShown: false }} />
-      <Stack.Screen name="fotograf-ile-giris" options={{ headerShown: false }} />
-      <Stack.Screen name="olcum-gecmisi" options={{ headerShown: false }} />
-      <Stack.Screen name="olcum-detay" options={{ headerShown: false }} />
-      <Stack.Screen name="mesajlar" options={{ headerShown: false }} />
-      <Stack.Screen name="ai-asistan" options={{ headerShown: false }} />
-      <Stack.Screen name="yeni-sikayet" options={{ headerShown: false }} />
-      <Stack.Screen name="sikayet-duzenle" options={{ headerShown: false }} />
-    </Stack>
+    <SafeAreaProvider>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="veri-ekleme-yontemi" options={{ headerShown: false }} />
+        <Stack.Screen name="el-ile-giris" options={{ headerShown: false }} />
+        <Stack.Screen name="fotograf-ile-giris" options={{ headerShown: false }} />
+        <Stack.Screen name="olcum-gecmisi" options={{ headerShown: false }} />
+        <Stack.Screen name="olcum-detay" options={{ headerShown: false }} />
+        <Stack.Screen name="mesajlar" options={{ headerShown: false }} />
+        <Stack.Screen name="ai-asistan" options={{ headerShown: false }} />
+        <Stack.Screen name="yeni-sikayet" options={{ headerShown: false }} />
+        <Stack.Screen name="sikayet-duzenle" options={{ headerShown: false }} />
+        <Stack.Screen name="egzersiz-detay" options={{ headerShown: false }} />
+        <Stack.Screen name="egzersiz-akisi" options={{ headerShown: false }} />
+      </Stack>
+    </SafeAreaProvider>
   );
 }

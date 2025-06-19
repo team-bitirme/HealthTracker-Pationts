@@ -1,11 +1,14 @@
 import { Link, Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HeaderButton } from '../../components/HeaderButton';
 import { TabBarIcon } from '../../components/TabBarIcon';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
@@ -14,9 +17,9 @@ export default function TabLayout() {
           tabBarActiveTintColor: '#4263eb',
           tabBarInactiveTintColor: '#868e96',
           tabBarStyle: {
-            height: 80,
-            paddingBottom: 16,
-            paddingTop: 12,
+            height: 60 + insets.bottom,
+            paddingBottom: insets.bottom + 8,
+            paddingTop: 8,
             elevation: 8,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -2 },
@@ -31,7 +34,7 @@ export default function TabLayout() {
             marginTop: 2,
           },
           tabBarIconStyle: {
-            marginBottom: -3,
+            marginBottom: -2,
           },
           headerShown: false,
         }}>
@@ -44,12 +47,21 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="veri-ekle"
           options={{
             title: 'Veri Ekle',
             tabBarIcon: ({ color, focused }) => (
               <TabBarIcon name="plus-circle" color={color} focused={focused} />
+            ),
+          }}
+        /> */}
+        <Tabs.Screen
+          name="egzersizler"
+          options={{
+            title: 'Egzersizler',
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="heart" color={color} focused={focused} />
             ),
           }}
         />
@@ -62,7 +74,6 @@ export default function TabLayout() {
             ),
           }}
         />
-
       </Tabs>
     </View>
   );

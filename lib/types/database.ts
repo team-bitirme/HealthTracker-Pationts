@@ -51,7 +51,7 @@ export interface PatientProfile {
   email: string;
   role_id: number | null;
   created_at: string | null;
-  
+
   // Patient specific info
   patient_id: string | null;
   name: string | null;
@@ -60,7 +60,7 @@ export interface PatientProfile {
   gender_id: number | null;
   gender_name: string | null;
   patient_note: string | null;
-  
+
   // Doctor info
   doctor_id: string | null;
   doctor_name: string | null;
@@ -71,4 +71,45 @@ export interface PatientProfile {
 export interface LoadingState {
   isLoading: boolean;
   error: string | null;
-} 
+}
+
+export interface ExercisePlan {
+  id: string;
+  patient_id: string | null;
+  exercise_id: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  frequency: string | null;
+  duration_min: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  is_deleted: boolean | null;
+}
+
+export interface Exercise {
+  id: string;
+  name: string | null;
+  description: string | null;
+  difficulty_id: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  is_deleted: boolean | null;
+}
+
+export interface ExerciseDifficulty {
+  id: number;
+  code: string;
+  name: string;
+}
+
+// Egzersiz planı ile egzersiz bilgilerinin birleştirilmiş hali
+export interface ExercisePlanWithDetails {
+  id: string;
+  patient_id: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  frequency: string | null;
+  duration_min: number | null;
+  exercise: Exercise | null;
+  difficulty: ExerciseDifficulty | null;
+}

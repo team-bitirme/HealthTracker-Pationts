@@ -44,9 +44,9 @@ export function MessagesPreview({
   const renderUnreadMessageCard = (message: Message, onPress: () => void) => {
     const isDoctorMessage = message.type === 'doctor';
     const icon = isDoctorMessage ? 'user-md' : 'android';
-    const iconColor = isDoctorMessage ? '#007bff' : '#28a745';
-    const cardColor = isDoctorMessage ? '#f8f9ff' : '#f8fff9';
-    const borderColor = isDoctorMessage ? '#007bff' : '#28a745';
+    const iconColor = isDoctorMessage ? '#007bff' : '#6f42c1';
+    const cardColor = isDoctorMessage ? '#f8f9ff' : '#f8f9f9';
+    const borderColor = isDoctorMessage ? '#007bff' : '#6f42c1';
 
     return (
       <TouchableOpacity
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
   },
   assistantButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#6f42c1',
   },
   buttonText: {
     color: '#fff',
