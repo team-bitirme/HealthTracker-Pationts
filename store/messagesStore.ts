@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { MessageBubbleData, MessageWithDetails, MessageType } from '~/lib/types/messages';
 import { messagesService } from '~/services/messagesService';
+import { useAIStore } from './aiStore';
 
 // AI Asistan için statik ID
 const AI_ASSISTANT_ID = '00d1201a-ca68-49f4-be4a-37ebb492a022';
@@ -43,6 +44,7 @@ interface MessagesState {
     messageTypeId?: number,
     isAiMessage?: boolean
   ) => Promise<void>;
+  sendAiMessage: (content: string, senderUserId: string, patientId: string) => Promise<void>;
   loadMessageTypes: () => Promise<void>;
   loadDoctorInfo: (userId: string) => Promise<void>;
   checkForNewMessages: (userId: string) => Promise<boolean>;
@@ -484,6 +486,30 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
       // checkInterval korunur (global mesaj kontrolü devam eder)
     });
     console.log('🧹 Chat mesajları temizlendi, dashboard verileri korundu');
+  },
+
+  sendAiMessage: async (content: string, senderUserId: string, patientId: string) => {
+    try {
+      set({ isSending: true, error: null });
+
+      // Önce normal mesaj gönderme işlemini yap
+      await get().sendMessage(content, senderUserId, AI_ASSISTANT_ID, 2, true);
+
+      // AI yanıtı için store'dan fonksiyonu çağır
+      const aiStore = useAIStore.getState();
+      await aiStore.generateResponse(content, senderUserId, patientId);
+
+      // AI mesajlarını yeniden yükle
+      await get().loadAiMessages(senderUserId);
+
+      set({ isSending: false });
+    } catch (error) {
+      console.error('AI mesaj gönderme hatası:', error);
+      set({
+        error: error instanceof Error ? error.message : 'AI mesajı gönderilemedi',
+        isSending: false,
+      });
+    }
   },
 
   setError: (error: string | null) => {

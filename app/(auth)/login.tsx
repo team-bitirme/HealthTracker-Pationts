@@ -19,13 +19,13 @@ import { DEV_USER } from '../../lib/supabase';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   const { signIn, isLoading, initialize } = useAuthStore();
 
   useEffect(() => {
     // Initialize auth store on component mount
     initialize();
-    
+
     // Pre-fill development user credentials in dev mode
     if (__DEV__) {
       setEmail(DEV_USER.email);
@@ -40,7 +40,7 @@ export default function LoginScreen() {
     }
 
     const result = await signIn(email, password);
-    
+
     if (result.success) {
       router.replace('/(tabs)');
     } else {
@@ -53,20 +53,18 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <StatusBar style="dark" />
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
+        keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>🩺</Text>
           </View>
-          <Text style={styles.title}>Diyabet Takip</Text>
+          <Text style={styles.title}>Sağlık Takip</Text>
           <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
         </View>
 
@@ -103,8 +101,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
             onPress={handleLogin}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <Text style={styles.loginButtonText}>
               {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </Text>
@@ -219,4 +216,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-}); 
+});

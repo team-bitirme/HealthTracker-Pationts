@@ -7,11 +7,13 @@ import { MessageInput } from '~/components/MessageInput';
 import { useAuthStore } from '~/store/authStore';
 import { useProfileStore } from '~/store/profileStore';
 import { useMessagesStore } from '~/store/messagesStore';
+import { useAIStore } from '~/store/aiStore';
 
 export default function AiAsistanEkrani() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
+  const { setApiKey } = useAIStore();
   const flatListRef = useRef<FlatList>(null);
 
   const {
@@ -20,15 +22,22 @@ export default function AiAsistanEkrani() {
     isSending,
     error,
     loadAiMessages,
-    sendMessage,
+    sendAiMessage,
     loadMessageTypes,
     updateDashboardInfo,
     markAiMessagesAsRead,
     setError,
   } = useMessagesStore();
 
-  // Mesaj kontrolü artık global olarak _layout.tsx'te yapılıyor
+  // Gemini API anahtarını ayarla
+  useEffect(() => {
+    // Gemini API anahtarını environment variable'dan al
+    const apiKey =
+      process.env.EXPO_PUBLIC_GEMINI_API_KEY || 'AIzaSyBg4_9r4u63UBADOgclmtsTyJlPLAG4z7s';
+    setApiKey(apiKey);
+  }, [setApiKey]);
 
+  // Mesaj kontrolü artık global olarak _layout.tsx'te yapılıyor
   useEffect(() => {
     const initializeAiChat = async () => {
       if (!user?.id) return;
@@ -70,19 +79,13 @@ export default function AiAsistanEkrani() {
   }, []);
 
   const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || !user?.id) {
+    if (!messageText.trim() || !user?.id || !profile?.patient_id) {
       return;
     }
 
     try {
-      // AI asistan mesajı gönder - receiver olarak statik AI ID kullan
-      await sendMessage(
-        messageText,
-        user.id,
-        '00d1201a-ca68-49f4-be4a-37ebb492a022', // AI asistan statik ID
-        2, // AI asistan mesaj tipi (gerekirse ayarlanabilir)
-        true // isAiMessage = true
-      );
+      // AI asistan mesajı gönder ve Gemini entegrasyonu ile yanıt al
+      await sendAiMessage(messageText, user.id, profile.patient_id);
 
       // Mesaj gönderildikten sonra en sona scroll yap
       setTimeout(() => {
